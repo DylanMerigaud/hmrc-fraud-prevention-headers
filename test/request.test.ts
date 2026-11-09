@@ -135,3 +135,43 @@ test("trustedProxies without a socket address gives no public IP or port: the wi
   );
   assert.equal(blank.publicIp, undefined);
 });
+
+test("an X-Forwarded-For entry with a port gives the IP, and the port of the chosen entry", () => {
+  const ipv4 = requestFraudData(
+    {
+      remoteAddress: "10.0.0.5",
+      remotePort: 4000,
+      headers: { "x-forwarded-for": "6.6.6.6:1, 81.2.69.142:51123" },
+    },
+    { trustedProxies: 1 },
+  );
+  assert.equal(ipv4.publicIp, "81.2.69.142");
+  assert.equal(ipv4.publicPort, 51123);
+  const ipv6 = requestFraudData(
+    { remoteAddress: "10.0.0.5", headers: { "x-forwarded-for": "[2a00:1450::1]:51123" } },
+    { trustedProxies: 1 },
+  );
+  assert.equal(ipv6.publicIp, "2a00:1450::1");
+  assert.equal(ipv6.publicPort, 51123);
+  const bare = requestFraudData(
+    { remoteAddress: "10.0.0.5", headers: { "x-forwarded-for": "2a00:1450::1" } },
+    { trustedProxies: 1 },
+  );
+  assert.equal(bare.publicIp, "2a00:1450::1");
+  assert.equal(bare.publicPort, undefined);
+  const header = requestFraudData(
+    {
+      remoteAddress: "10.0.0.5",
+      headers: { "x-forwarded-for": "81.2.69.142:51123", "x-client-port": "40000" },
+    },
+    { trustedProxies: 1, clientPortHeader: "x-client-port" },
+  );
+  assert.equal(header.publicIp, "81.2.69.142");
+  assert.equal(header.publicPort, 40000);
+  const badPort = requestFraudData(
+    { remoteAddress: "10.0.0.5", headers: { "x-forwarded-for": "81.2.69.142:0" } },
+    { trustedProxies: 1 },
+  );
+  assert.equal(badPort.publicIp, "81.2.69.142");
+  assert.equal(badPort.publicPort, undefined);
+});

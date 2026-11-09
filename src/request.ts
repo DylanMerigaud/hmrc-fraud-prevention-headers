@@ -58,6 +58,15 @@ function cleanIp(value: string | undefined): string | undefined {
   return ipVersion(ip) === 0 ? undefined : ip;
 }
 
+/** One `X-Forwarded-For` entry split into address and optional port (`1.2.3.4:5`, `[::1]:5`). */
+function splitEntry(entry: string): { ip: string; port?: number } {
+  const m = /^\[([^\]]+)\]:([0-9]{1,5})$/.exec(entry) ?? /^([0-9.]+):([0-9]{1,5})$/.exec(entry);
+  if (!m) return { ip: normalizeIp(entry) };
+  const port = validPort(Number(m[2]));
+  const ip = normalizeIp(m[1] as string);
+  return port === undefined ? { ip } : { ip, port };
+}
+
 function validPort(value: unknown): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 65535
     ? value
@@ -70,10 +79,11 @@ function validPort(value: unknown): number | undefined {
  * With `trustedProxies` 0 the socket address and port are used and `X-Forwarded-For` is ignored,
  * so a client cannot spoof its address. With `trustedProxies` N the client is the entry N
  * positions from the right of the list `X-Forwarded-For` entries then the socket address
- * (clamped to the first entry); its port is only known through `clientPortHeader`. With
- * `trustedProxies` above 0 the socket address is required: without it `publicIp` and
- * `publicPort` are undefined, since counting from the right would land on an entry the client
- * wrote. A value that is not an IP gives no `publicIp`. Never throws on odd input.
+ * (clamped to the first entry). An entry may carry a port (`81.2.69.142:51123`,
+ * `[2a00:1450::1]:51123`): the client's port is read from `clientPortHeader` when it is set, else
+ * from the chosen entry when it has one. With `trustedProxies` above 0 the socket address is
+ * required: without it `publicIp` and `publicPort` are undefined, since counting from the right
+ * would land on an entry the client wrote. A value that is not an IP gives no `publicIp`. Never throws on odd input.
  */
 export function requestFraudData(
   facts: RequestFacts,
@@ -94,12 +104,16 @@ export function requestFraudData(
       .split(",")
       .map((e) => e.trim())
       .filter((e) => e !== "")
-      .map((e) => normalizeIp(e));
-    list.push(normalizeIp(facts.remoteAddress));
-    publicIp = cleanIp(list[Math.max(0, list.length - 1 - trusted)]);
+      .map(splitEntry);
+    // the socket entry carries no port: the socket port is the last proxy's, not the client's
+    list.push({ ip: normalizeIp(facts.remoteAddress) });
+    const chosen = list[Math.max(0, list.length - 1 - trusted)];
+    publicIp = cleanIp(chosen?.ip);
     if (options.clientPortHeader !== undefined) {
       const raw = headerValue(headers, options.clientPortHeader)?.trim();
       if (raw !== undefined && /^[0-9]{1,5}$/.test(raw)) publicPort = validPort(Number(raw));
+    } else if (publicIp !== undefined) {
+      publicPort = chosen?.port;
     }
   }
 
