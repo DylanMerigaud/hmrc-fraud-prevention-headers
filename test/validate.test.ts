@@ -155,7 +155,7 @@ test("an empty required header gives EMPTY_HEADER 'Header value is empty'", () =
 
 test("a gov-client or gov-vendor header outside the method gives UNEXPECTED_HEADER", () => {
   const result = run("WEB_APP_VIA_SERVER", {
-    "Gov-Client-Local-IPs": "10.1.2.3",
+    "Gov-Client-MAC-Addresses": "ea%3A43%3A1a%3A5d%3A21%3A45",
     "Gov-Client-Browser-Plugins": "x",
     "Gov-Client-Browser-Do-Not-Track": "false",
     "X-Other": "1",
@@ -164,7 +164,29 @@ test("a gov-client or gov-vendor header outside the method gives UNEXPECTED_HEAD
   assert.equal(result.errors, undefined);
   assert.equal(result.warnings?.length, 1);
   assert.equal(result.warnings?.[0]?.code, "UNEXPECTED_HEADER");
-  assert.deepEqual(result.warnings?.[0]?.headers, ["gov-client-local-ips"]);
+  assert.deepEqual(result.warnings?.[0]?.headers, ["gov-client-mac-addresses"]);
+});
+
+test("headers the change log says are not an issue to send are tolerated per method", () => {
+  const web = run("WEB_APP_VIA_SERVER", {
+    "Gov-Client-Local-IPs": "fc00%3A%3A,10.1.2.3",
+    "Gov-Client-Local-IPs-Timestamp": "2020-09-21T14:30:05.123Z",
+    "Gov-Client-Browser-Plugins": "x",
+    "Gov-Client-Browser-Do-Not-Track": "false",
+  });
+  assert.equal(web.code, "VALID_HEADERS", JSON.stringify(web));
+  for (const method of ["MOBILE_APP_DIRECT", "MOBILE_APP_VIA_SERVER"] as const) {
+    const mobile = run(method, { "Gov-Client-MAC-Addresses": "ea%3A43%3A1a%3A5d%3A21%3A45" });
+    assert.equal(mobile.code, "VALID_HEADERS", `${method}: ${JSON.stringify(mobile)}`);
+  }
+  const desktop = run("DESKTOP_APP_DIRECT", { "Gov-Client-Browser-Plugins": "x" });
+  assert.deepEqual(desktop.warnings, [
+    err(
+      "gov-client-browser-plugins",
+      "Header is not expected for this connection method",
+      "UNEXPECTED_HEADER",
+    ),
+  ]);
 });
 
 test("a value outside US-ASCII printable gives INVALID_HEADER", () => {

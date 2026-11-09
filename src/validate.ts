@@ -541,7 +541,7 @@ export function validateFraudPreventionHeaders(headers: HeaderSource): Validatio
 
   const expected = new Set<string>([
     ...required.map((h) => h.toLowerCase()),
-    ...TOLERATED_HEADERS.map((h) => h.toLowerCase()),
+    ...TOLERATED_HEADERS[method].map((h) => h.toLowerCase()),
   ]);
   for (const name of received.keys()) {
     if (/^gov-(client|vendor)-/.test(name) && !expected.has(name)) {

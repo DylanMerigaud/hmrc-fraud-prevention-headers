@@ -211,11 +211,27 @@ export const REQUIRED_HEADERS: Readonly<Record<ConnectionMethod, readonly Header
   ],
 };
 
-/** Headers from earlier spec versions that HMRC no longer requires but does not reject. */
-export const TOLERATED_HEADERS: readonly string[] = [
-  "Gov-Client-Browser-Plugins",
-  "Gov-Client-Browser-Do-Not-Track",
-];
+/**
+ * Headers a connection method no longer has to send but that HMRC's change log says are "not an
+ * issue" to send: web app via server since 3.1 (Browser-Plugins, Local-IPs,
+ * Local-IPs-Timestamp) and 3.2 (Browser-Do-Not-Track); mobile app direct and via server since
+ * 3.2 (MAC-Addresses). The validator does not report them as unexpected for that method.
+ */
+export const TOLERATED_HEADERS: Readonly<Record<ConnectionMethod, readonly string[]>> = {
+  WEB_APP_VIA_SERVER: [
+    "Gov-Client-Browser-Plugins",
+    "Gov-Client-Local-IPs",
+    "Gov-Client-Local-IPs-Timestamp",
+    "Gov-Client-Browser-Do-Not-Track",
+  ],
+  DESKTOP_APP_DIRECT: [],
+  DESKTOP_APP_VIA_SERVER: [],
+  MOBILE_APP_DIRECT: ["Gov-Client-MAC-Addresses"],
+  MOBILE_APP_VIA_SERVER: ["Gov-Client-MAC-Addresses"],
+  BATCH_PROCESS_DIRECT: [],
+  OTHER_DIRECT: [],
+  OTHER_VIA_SERVER: [],
+};
 
 /** True when the connection method goes through intermediary servers (name ends with `_VIA_SERVER`). */
 export function isViaServer(method: ConnectionMethod): boolean {

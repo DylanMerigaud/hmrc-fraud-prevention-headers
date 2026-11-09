@@ -182,11 +182,22 @@ test("header names cover the 20 headers of the matrix", () => {
   }
 });
 
-test("tolerated headers", () => {
-  assert.deepEqual(
-    [...TOLERATED_HEADERS],
-    ["Gov-Client-Browser-Plugins", "Gov-Client-Browser-Do-Not-Track"],
-  );
+test("tolerated headers per connection method", () => {
+  assert.deepEqual(TOLERATED_HEADERS, {
+    WEB_APP_VIA_SERVER: [
+      "Gov-Client-Browser-Plugins",
+      "Gov-Client-Local-IPs",
+      "Gov-Client-Local-IPs-Timestamp",
+      "Gov-Client-Browser-Do-Not-Track",
+    ],
+    DESKTOP_APP_DIRECT: [],
+    DESKTOP_APP_VIA_SERVER: [],
+    MOBILE_APP_DIRECT: ["Gov-Client-MAC-Addresses"],
+    MOBILE_APP_VIA_SERVER: ["Gov-Client-MAC-Addresses"],
+    BATCH_PROCESS_DIRECT: [],
+    OTHER_DIRECT: [],
+    OTHER_VIA_SERVER: [],
+  });
 });
 
 test("isViaServer", () => {
