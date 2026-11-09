@@ -555,14 +555,17 @@ test("License-IDs needs values; an unhashed value is a warning", () => {
 });
 
 test("License-IDs: dash-grouped plaintext keys draw the warning, hash shapes do not", () => {
-  for (const key of ["ABCDE-FGHIJ-KLMNO-PQRST", "XXXX-XXXX-XXXX-XXXX-XXXX"]) {
+  for (const key of [
+    "ABCDE-FGHIJ-KLMNO-PQRST",
+    "XXXX-XXXX-XXXX-XXXX-XXXX",
+    "0f8fad5b-d9cb-469f-a165-70867728950e",
+  ]) {
     const result = run("OTHER_DIRECT", { "Gov-Vendor-License-IDs": `my-licensed-software=${key}` });
     warned(result, "gov-vendor-license-ids", "License value does not look hashed");
   }
   for (const value of [
     "8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
     "c672b8d1ef56ed28",
-    "beec798b-b366-47fa-b1f8-92cede14a1ce",
     "q5u8fL0QUDz8ccBZ_dJ6YTdhQx3BkWS9u8z-0FbPVQs",
     "q5u8fL0QUDz8ccBZ%2BdJ6YTdhQx3BkWS9u8z%2F0FbPVQs%3D",
   ]) {

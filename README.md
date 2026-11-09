@@ -12,8 +12,9 @@ Test Fraud Prevention Headers API. It is for anyone writing MTD software in Type
 JavaScript: a web app, a desktop or mobile app with or without a backend, a batch process.
 
 It implements [HMRC fraud prevention specification v3.3](https://developer.service.hmrc.gov.uk/guides/fraud-prevention/)
-(27 January 2025) for all eight connection methods. Zero dependencies, ESM and CommonJS, typed,
-runs on Node 18+, Deno, Bun, edge runtimes and browsers.
+(27 January 2025) for all eight connection methods. Zero dependencies, ESM and CommonJS, typed.
+CI runs it on Node 18, 20, 22 and 24, Deno and Bun; it imports no Node API, so it also loads in
+browsers and edge runtimes that provide `TextEncoder` and `TextDecoder`.
 
 ## Install
 
@@ -103,7 +104,8 @@ await fetch("/api/vat/returns", {
 ```
 
 `fraudData` holds `deviceId`, `screens`, `windowSize`, `timezone` and `browserUserAgent`, named
-as the builder's input, so the server spreads it in. The device id is a UUID kept in
+as the builder's input. On the server, take those five fields by name rather than spreading the
+whole object: a client must not be able to set the connection method, an IP or `unavailable`. The device id is a UUID kept in
 `localStorage` (key `hmrc-fph-device-id`), as HMRC asks: generated once, regenerated only if the
 user clears it. Browsers expose the current screen only, so `screens` has one entry.
 
@@ -123,10 +125,18 @@ app.post("/api/vat/returns", express.json(), async (req, res) => {
     clientPortHeader: "x-client-port", // set by your load balancer, see below
     vendorPublicIp: "81.2.69.160", // the public IP your DNS points at
   });
+  // Take only the browser's own fields from what the browser sent: everything else is decided here.
+  const { deviceId, screens, windowSize, timezone, browserUserAgent } = JSON.parse(
+    req.get("x-fraud-data"),
+  );
   const headers = buildFraudPreventionHeaders({
-    connectionMethod: "WEB_APP_VIA_SERVER",
-    ...JSON.parse(req.get("x-fraud-data")),
+    deviceId,
+    screens,
+    windowSize,
+    timezone,
+    browserUserAgent,
     ...seen,
+    connectionMethod: "WEB_APP_VIA_SERVER",
     userIds: { "my-tax-app": req.user.email },
     multiFactor: req.user.lastTotp,
     vendorLicenseIds: { "my-tax-app": process.env.LICENSE_HASH },
@@ -309,6 +319,12 @@ which characters to percent encode and which separators not to, which headers a 
 the timestamp formats, the forwarded chain that must match both public IPs, and no
 placeholders. Use HMRC's Test API as the final check with your sandbox credentials; use this
 validator in your unit tests and CI, where you have no credentials and no network.
+
+## Migrating from a hand-written builder
+
+[docs/MIGRATION.md](docs/MIGRATION.md) maps each piece of a typical in-house builder (the `kv()`
+helper, the forwarded chain, the browser snippet, the per-method function) to its counterpart here,
+with a before and after.
 
 ## Specification coverage
 

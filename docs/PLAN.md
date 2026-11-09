@@ -32,7 +32,7 @@ export const CONNECTION_METHODS: readonly ConnectionMethod[];          // the 8,
 export type HeaderName = "Gov-Client-Connection-Method" | ... ;        // the 20 of SPEC.md section 3 matrix
 export const HEADER_NAMES: readonly HeaderName[];
 export const REQUIRED_HEADERS: Readonly<Record<ConnectionMethod, readonly HeaderName[]>>; // HMRC page order (SPEC.md 3.1 to 3.8)
-export const TOLERATED_HEADERS: readonly string[];  // "Gov-Client-Browser-Plugins", "Gov-Client-Browser-Do-Not-Track"
+export const TOLERATED_HEADERS: Readonly<Record<ConnectionMethod, readonly string[]>>; // what the change log says may still be sent (3.1, 3.2)
 export function isViaServer(method: ConnectionMethod): boolean;        // name ends with _VIA_SERVER
 
 // src/encoding.ts

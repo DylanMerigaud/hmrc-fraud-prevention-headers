@@ -95,7 +95,7 @@ const WHOLE = /^[1-9]\d*$/;
 const POSITIVE_NUMBER = /^\d+(\.\d+)?$/;
 const HEX_ONLY = /^[0-9a-fA-F]{16,}$/;
 const BASE64 = /^[A-Za-z0-9+/_-]{22,}={0,2}$/;
-const DASH_GROUPED = /^([A-Za-z0-9]{3,8}-){2,}[A-Za-z0-9]{3,8}$/;
+const DASH_GROUPED = /^([A-Za-z0-9]{1,12}-){2,}[A-Za-z0-9]{1,12}$/;
 const ENCODED_TOKEN = /^(?:[A-Za-z0-9\-._~]|%[0-9A-Fa-f]{2})*$/;
 const MFA_TYPES = new Set(["TOTP", "AUTH_CODE", "OTHER"]);
 
@@ -126,7 +126,6 @@ interface HeaderRule {
  * by dashes like a product key (`ABCDE-FGHIJ-KLMNO-PQRST`).
  */
 function looksHashed(value: string): boolean {
-  if ((value.match(/[0-9a-fA-F]/g) ?? []).length >= 32) return true;
   if (HEX_ONLY.test(value)) return true;
   return BASE64.test(value) && !DASH_GROUPED.test(value);
 }

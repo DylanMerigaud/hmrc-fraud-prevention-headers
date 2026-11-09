@@ -16,11 +16,18 @@ const server = createServer((req, res) => {
     },
     { trustedProxies: 1, clientPortHeader: "x-client-port", vendorPublicIp: "81.2.69.160" },
   );
-  const fromBrowser = JSON.parse(req.headers["x-fraud-data"]);
+  // Only the browser's own fields are taken from what the browser sent.
+  const { deviceId, screens, windowSize, timezone, browserUserAgent } = JSON.parse(
+    req.headers["x-fraud-data"],
+  );
   const headers = buildFraudPreventionHeaders({
-    connectionMethod: "WEB_APP_VIA_SERVER",
-    ...fromBrowser,
+    deviceId,
+    screens,
+    windowSize,
+    timezone,
+    browserUserAgent,
     ...seen,
+    connectionMethod: "WEB_APP_VIA_SERVER",
     userIds: { "my-tax-app": "alice123" },
     multiFactor: [{ type: "TOTP", timestamp: new Date(), uniqueReference: "a1b2c3d4e5f60718" }],
     vendorLicenseIds: {
