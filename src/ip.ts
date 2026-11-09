@@ -16,13 +16,14 @@ function parseIpv6(value: string): number[] | undefined {
   if (value === "" || value.includes("%")) return undefined;
   const halves = value.split("::");
   if (halves.length > 2) return undefined;
-  const toGroups = (s: string): number[] | undefined => {
+  // an IPv4 tail may only end the whole address: the tail half, or the only half
+  const toGroups = (s: string, allowV4: boolean): number[] | undefined => {
     if (s === "") return [];
     const out: number[] = [];
     const parts = s.split(":");
     for (let i = 0; i < parts.length; i++) {
       const p = parts[i] as string;
-      if (i === parts.length - 1 && p.includes(".")) {
+      if (allowV4 && i === parts.length - 1 && p.includes(".")) {
         const v4 = parseIpv4(p);
         if (!v4) return undefined;
         out.push(
@@ -36,10 +37,10 @@ function parseIpv6(value: string): number[] | undefined {
     }
     return out;
   };
-  const head = toGroups(halves[0] as string);
+  const head = toGroups(halves[0] as string, halves.length === 1);
   if (!head) return undefined;
   if (halves.length === 1) return head.length === 8 ? head : undefined;
-  const tail = toGroups(halves[1] as string);
+  const tail = toGroups(halves[1] as string, true);
   if (!tail) return undefined;
   const missing = 8 - head.length - tail.length;
   if (missing < 1) return undefined;

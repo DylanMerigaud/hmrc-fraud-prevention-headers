@@ -70,3 +70,12 @@ test("canonicalIp and sameIp compare addresses whatever their spelling", () => {
   assert.ok(sameIp("2001:0db8::", "2001:db8::0"));
   assert.ok(!sameIp("nope", "nope"));
 });
+
+test("an IPv4 tail is only allowed as the last part of the whole address", () => {
+  assert.equal(ipVersion("1.2.3.4::"), 0);
+  assert.equal(ipVersion("1.2.3.4::1"), 0);
+  assert.equal(ipVersion("::1.2.3.4"), 6);
+  assert.equal(ipVersion("::ffff:1.2.3.4"), 6);
+  assert.equal(ipVersion("64:ff9b::1.2.3.4"), 6);
+  assert.equal(ipVersion("0:0:0:0:0:ffff:1.2.3.4"), 6);
+});
