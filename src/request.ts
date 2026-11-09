@@ -70,8 +70,10 @@ function validPort(value: unknown): number | undefined {
  * With `trustedProxies` 0 the socket address and port are used and `X-Forwarded-For` is ignored,
  * so a client cannot spoof its address. With `trustedProxies` N the client is the entry N
  * positions from the right of the list `X-Forwarded-For` entries then the socket address
- * (clamped to the first entry); its port is only known through `clientPortHeader`. A value that
- * is not an IP gives no `publicIp`. Never throws on odd input.
+ * (clamped to the first entry); its port is only known through `clientPortHeader`. With
+ * `trustedProxies` above 0 the socket address is required: without it `publicIp` and
+ * `publicPort` are undefined, since counting from the right would land on an entry the client
+ * wrote. A value that is not an IP gives no `publicIp`. Never throws on odd input.
  */
 export function requestFraudData(
   facts: RequestFacts,
@@ -85,15 +87,15 @@ export function requestFraudData(
   if (trusted === 0) {
     publicIp = cleanIp(facts.remoteAddress);
     publicPort = validPort(facts.remotePort);
-  } else {
+  } else if (typeof facts.remoteAddress === "string" && facts.remoteAddress.trim() !== "") {
+    // Without the socket address the trust window would shift one entry left, onto an entry
+    // the client wrote itself, so nothing is taken from X-Forwarded-For then.
     const list = (headerValue(headers, "x-forwarded-for") ?? "")
       .split(",")
       .map((e) => e.trim())
       .filter((e) => e !== "")
       .map((e) => normalizeIp(e));
-    if (typeof facts.remoteAddress === "string" && facts.remoteAddress.trim() !== "") {
-      list.push(normalizeIp(facts.remoteAddress));
-    }
+    list.push(normalizeIp(facts.remoteAddress));
     publicIp = cleanIp(list[Math.max(0, list.length - 1 - trusted)]);
     if (options.clientPortHeader !== undefined) {
       const raw = headerValue(headers, options.clientPortHeader)?.trim();

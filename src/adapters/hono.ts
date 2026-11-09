@@ -5,14 +5,19 @@ export interface HonoContextLike {
   req: { raw: { headers: { forEach(cb: (value: string, key: string) => void): void } } };
 }
 
-/** Options of {@link fromHono}: `connInfo` is the result of Hono's `getConnInfo(c)`. */
+/** Options of {@link fromHono}. */
 export interface HonoOptions extends RequestOptions {
+  /**
+   * The result of Hono's `getConnInfo(c)`. Needed: without it there is no socket address, so
+   * `publicIp` and `publicPort` are undefined, also behind `trustedProxies`.
+   */
   connInfo?: { remote: { address?: string; port?: number } };
 }
 
 /**
  * Reads the fraud prevention data of a Hono request. Headers come from `c.req.raw.headers`;
- * Hono does not expose the socket, so the address and port come from `options.connInfo`.
+ * Hono does not expose the socket, so the address and port come from `options.connInfo`; pass
+ * it, or the result has no `publicIp` and no `publicPort`.
  */
 export function fromHono(c: HonoContextLike, options: HonoOptions = {}): RequestFraudData {
   const { connInfo, ...rest } = options;

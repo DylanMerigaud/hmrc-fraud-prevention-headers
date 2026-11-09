@@ -67,3 +67,21 @@ test("hono reads raw Headers and connInfo", () => {
   assert.equal(direct.publicPort, 51123);
   assert.equal(fromHono({ req: { raw: { headers: new Headers() } } }).publicIp, undefined);
 });
+
+test("hono without connInfo behind trusted proxies gives no public IP or port", () => {
+  const r = fromHono(
+    {
+      req: {
+        raw: {
+          headers: new Headers({
+            "x-forwarded-for": "6.6.6.6, 81.2.69.142",
+            "x-client-port": "51123",
+          }),
+        },
+      },
+    },
+    { trustedProxies: 1, clientPortHeader: "x-client-port" },
+  );
+  assert.equal(r.publicIp, undefined);
+  assert.equal(r.publicPort, undefined);
+});

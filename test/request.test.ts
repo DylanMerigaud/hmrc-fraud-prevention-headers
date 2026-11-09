@@ -121,3 +121,17 @@ test("vendor chain from vendorPublicIp and forwardedServers", () => {
   assert.equal(none.vendorForwarded, undefined);
   assert.equal(requestFraudData(facts).vendorForwarded, undefined);
 });
+
+test("trustedProxies without a socket address gives no public IP or port: the window cannot shift onto a client entry", () => {
+  const r = requestFraudData(
+    { headers: { "x-forwarded-for": "6.6.6.6, 81.2.69.142", "x-client-port": "51123" } },
+    { trustedProxies: 1, clientPortHeader: "x-client-port" },
+  );
+  assert.equal(r.publicIp, undefined);
+  assert.equal(r.publicPort, undefined);
+  const blank = requestFraudData(
+    { remoteAddress: " ", headers: { "x-forwarded-for": "6.6.6.6, 81.2.69.142" } },
+    { trustedProxies: 1 },
+  );
+  assert.equal(blank.publicIp, undefined);
+});
