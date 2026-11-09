@@ -56,11 +56,14 @@ export function percentDecode(value: string): string {
       bytes.push(...encoder.encode(String.fromCodePoint(code)));
     }
   }
-  try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(new Uint8Array(bytes));
-  } catch {
+  // No `fatal` option: runtimes built without ICU reject it. Invalid sequences decode to
+  // U+FFFD instead, so a decode that does not re-encode to the same bytes was not UTF-8.
+  const text = new TextDecoder("utf-8", { ignoreBOM: true }).decode(new Uint8Array(bytes));
+  const again = encoder.encode(text);
+  if (again.length !== bytes.length || again.some((b, i) => b !== bytes[i])) {
     throw new FraudHeaderFormatError("percent escapes do not form valid UTF-8");
   }
+  return text;
 }
 
 function entries(pairs: Pairs): ReadonlyArray<readonly [string, string | number]> {

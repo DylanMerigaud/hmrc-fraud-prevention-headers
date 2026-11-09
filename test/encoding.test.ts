@@ -129,3 +129,24 @@ test("property: encode and decode round trip", () => {
     );
   }
 });
+
+test("invalid UTF-8 throws, also where TextDecoder ignores `fatal` (no ICU)", () => {
+  assert.throws(() => percentDecode("%C3%28"), FraudHeaderFormatError);
+  const g = globalThis as { TextDecoder: typeof TextDecoder };
+  const Original = g.TextDecoder;
+  class LenientDecoder extends Original {
+    constructor(label?: string, options?: TextDecoderOptions) {
+      super(label, { ...options, fatal: false });
+    }
+  }
+  g.TextDecoder = LenientDecoder as typeof TextDecoder;
+  try {
+    for (const bad of ["%C3%28", "%FF", "%E2%82", "%ED%A0%80", "%C0%AF"]) {
+      assert.throws(() => percentDecode(bad), FraudHeaderFormatError, bad);
+    }
+    assert.equal(percentDecode("%C3%A9%F0%9F%98%80"), "é😀");
+    assert.equal(percentDecode("%EF%BB%BFa"), "\uFEFFa");
+  } finally {
+    g.TextDecoder = Original;
+  }
+});
