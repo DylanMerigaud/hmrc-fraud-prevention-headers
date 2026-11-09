@@ -312,3 +312,11 @@ test("Multi-Factor rejects an impossible calendar date", () => {
     );
   }
 });
+
+test("Browser-JS-User-Agent percent-encodes control characters, so no header injection", () => {
+  const built = buildFraudPreventionHeaders(
+    { ...webReal, browserUserAgent: "Mozilla\r\nX-Evil: 1\u0000\u001f\u007f\t" },
+    { validate: false },
+  );
+  assert.equal(built["Gov-Client-Browser-JS-User-Agent"], "Mozilla%0D%0AX-Evil: 1%00%1F%7F%09");
+});

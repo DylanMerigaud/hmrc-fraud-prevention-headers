@@ -69,7 +69,10 @@ export interface FraudPreventionInput {
   timezone?: string;
   screens?: readonly Screen[];
   windowSize?: WindowSize;
-  /** WEB_APP_VIA_SERVER: sent as the browser reports it, only non-ASCII characters percent-encoded. */
+  /**
+   * WEB_APP_VIA_SERVER: sent as the browser reports it; only control characters (0x00 to 0x1F,
+   * 0x7F) and non-ASCII characters are percent-encoded.
+   */
   browserUserAgent?: string;
   userAgent?: DeviceUserAgent;
   localIps?: readonly string[];
@@ -153,7 +156,7 @@ type Maker = (input: FraudPreventionInput) => string | undefined;
 const MAKERS: Readonly<Record<HeaderName, Maker>> = {
   "Gov-Client-Browser-JS-User-Agent": (i) =>
     present(i.browserUserAgent)
-      ? i.browserUserAgent.replace(/[\u0080-\u{10ffff}]+/gu, (run) => percentEncode(run))
+      ? i.browserUserAgent.replace(/[^\x20-\x7e]+/gu, (run) => percentEncode(run))
       : undefined,
   "Gov-Client-Connection-Method": (i) => i.connectionMethod,
   "Gov-Client-Device-ID": (i) => (present(i.deviceId) ? i.deviceId : undefined),
