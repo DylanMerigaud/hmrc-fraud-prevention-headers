@@ -1,0 +1,92 @@
+{
+  "name": "hmrc-fraud-prevention-headers",
+  "version": "0.1.0",
+  "description": "Build, collect and validate the HMRC fraud prevention headers (Gov-Client-* and Gov-Vendor-*, spec v3.3) for Making Tax Digital, for every connection method. Zero dependencies.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Dylan Merigaud",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DylanMerigaud/hmrc-fraud-prevention-headers.git"
+  },
+  "homepage": "https://github.com/DylanMerigaud/hmrc-fraud-prevention-headers#readme",
+  "bugs": {
+    "url": "https://github.com/DylanMerigaud/hmrc-fraud-prevention-headers/issues"
+  },
+  "keywords": [
+    "hmrc",
+    "mtd",
+    "making-tax-digital",
+    "fraud-prevention",
+    "fraud-prevention-headers",
+    "gov-client",
+    "gov-vendor",
+    "vat",
+    "income-tax",
+    "uk"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/esm/index.d.ts", "default": "./dist/esm/index.js" },
+      "require": { "types": "./dist/cjs/index.d.ts", "default": "./dist/cjs/index.js" }
+    },
+    "./browser": {
+      "import": { "types": "./dist/esm/browser.d.ts", "default": "./dist/esm/browser.js" },
+      "require": { "types": "./dist/cjs/browser.d.ts", "default": "./dist/cjs/browser.js" }
+    },
+    "./express": {
+      "import": {
+        "types": "./dist/esm/adapters/express.d.ts",
+        "default": "./dist/esm/adapters/express.js"
+      },
+      "require": {
+        "types": "./dist/cjs/adapters/express.d.ts",
+        "default": "./dist/cjs/adapters/express.js"
+      }
+    },
+    "./fastify": {
+      "import": {
+        "types": "./dist/esm/adapters/fastify.d.ts",
+        "default": "./dist/esm/adapters/fastify.js"
+      },
+      "require": {
+        "types": "./dist/cjs/adapters/fastify.d.ts",
+        "default": "./dist/cjs/adapters/fastify.js"
+      }
+    },
+    "./hono": {
+      "import": {
+        "types": "./dist/esm/adapters/hono.d.ts",
+        "default": "./dist/esm/adapters/hono.js"
+      },
+      "require": {
+        "types": "./dist/cjs/adapters/hono.d.ts",
+        "default": "./dist/cjs/adapters/hono.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist/esm", "dist/cjs", "README.md", "LICENSE", "CHANGELOG.md"],
+  "scripts": {
+    "build": "node scripts/clean.mjs dist && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && node scripts/cjs-package.mjs",
+    "build:test": "node scripts/clean.mjs dist-test && tsc -p tsconfig.test.json",
+    "typecheck": "tsc -p tsconfig.esm.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "lint": "biome check .",
+    "test": "npm run build && npm run build:test && node --test dist-test/test/*.test.js",
+    "test:contract": "npm run build && npm run build:test && node --test dist-test/contract/*.test.js",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run lint && npm test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "^18.19.0",
+    "typescript": "^5.6.0"
+  }
+}
