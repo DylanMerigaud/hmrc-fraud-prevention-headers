@@ -51,7 +51,8 @@ function globalCrypto(): CryptoLike | undefined {
 
 /**
  * Creates a lowercase v4 UUID with `crypto.randomUUID`, or, when that is missing, from
- * `crypto.getRandomValues`. Throws an Error when the runtime has neither.
+ * `crypto.getRandomValues`. Defaults to the global `crypto`, which Node 18 does not define: pass
+ * a Web Crypto object there. Throws an Error when neither function is available.
  */
 export function createDeviceId(crypto: CryptoLike | undefined = globalCrypto()): string {
   if (crypto && typeof crypto.randomUUID === "function") return crypto.randomUUID().toLowerCase();
@@ -63,7 +64,9 @@ export function createDeviceId(crypto: CryptoLike | undefined = globalCrypto()):
     const h = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
     return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
   }
-  throw new Error("createDeviceId needs crypto.randomUUID or crypto.getRandomValues");
+  throw new Error(
+    'createDeviceId needs crypto.randomUUID or crypto.getRandomValues: pass a Web Crypto object (on Node 18, `require("node:crypto").webcrypto`)',
+  );
 }
 
 /**

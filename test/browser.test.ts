@@ -1,7 +1,9 @@
 import { strict as assert } from "node:assert";
+import { webcrypto } from "node:crypto";
 import { test } from "node:test";
 import {
   type BrowserLike,
+  type CryptoLike,
   collectBrowserFraudData,
   createDeviceId,
   getOrCreateDeviceId,
@@ -10,6 +12,8 @@ import { buildFraudPreventionHeaders } from "../src/build.js";
 import { requestFraudData } from "../src/request.js";
 import { validateFraudPreventionHeaders } from "../src/validate.js";
 
+// Node 18 has no global `crypto`: pass the Web Crypto object explicitly.
+const crypto = webcrypto as CryptoLike;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/118.0 Safari/537.36";
@@ -28,7 +32,7 @@ function fakeWindow(overrides: Partial<BrowserLike> = {}): BrowserLike {
         store.set(k, v);
       },
     },
-    crypto: globalThis.crypto,
+    crypto,
     ...overrides,
   };
 }
@@ -76,7 +80,10 @@ test("storage that throws still gives a UUID", () => {
     },
   });
   assert.match(collectBrowserFraudData({ window: w }).deviceId, UUID);
-  assert.match(getOrCreateDeviceId(undefined), UUID);
+  assert.match(
+    getOrCreateDeviceId(undefined, undefined, () => createDeviceId(crypto)),
+    UUID,
+  );
 });
 
 test("a stored value that is not a UUID is replaced", () => {
@@ -104,29 +111,25 @@ test("getOrCreateDeviceId uses the injected random", () => {
 });
 
 test("createDeviceId: randomUUID, getRandomValues fallback, nothing throws", () => {
-  assert.match(createDeviceId(), UUID);
-  const g = globalThis as { crypto?: unknown };
-  const saved = g.crypto;
-  try {
-    Object.defineProperty(globalThis, "crypto", {
-      value: {
-        getRandomValues: (a: Uint8Array) => {
-          a.fill(0xff);
-          return a;
-        },
-      },
-      configurable: true,
-    });
-    assert.equal(createDeviceId(), "ffffffff-ffff-4fff-bfff-ffffffffffff");
-    Object.defineProperty(globalThis, "crypto", { value: undefined, configurable: true });
-    assert.throws(() => createDeviceId(), Error);
-  } finally {
-    Object.defineProperty(globalThis, "crypto", {
-      value: saved,
-      configurable: true,
-      writable: true,
-    });
-  }
+  assert.match(createDeviceId(crypto), UUID);
+  const fill = {
+    getRandomValues: (a: Uint8Array) => {
+      a.fill(0xff);
+      return a;
+    },
+  };
+  assert.equal(createDeviceId(fill), "ffffffff-ffff-4fff-bfff-ffffffffffff");
+  assert.throws(() => createDeviceId({}), Error);
+});
+
+test("createDeviceId without crypto says how to pass one on Node 18", () => {
+  assert.throws(
+    () => createDeviceId({}),
+    (e: unknown) =>
+      e instanceof Error &&
+      /pass a Web Crypto object/.test(e.message) &&
+      e.message.includes('require("node:crypto").webcrypto'),
+  );
 });
 
 test("no window available throws a clear error", () => {
