@@ -24,3 +24,27 @@ test("localTimezone mirrors the date offset", () => {
   const d = new Date(Date.UTC(2020, 5, 1));
   assert.equal(localTimezone(d), formatTimezone(-d.getTimezoneOffset()));
 });
+
+test("formatTimestamp: a string must be ISO 8601 with an explicit zone and a real calendar date", () => {
+  for (const bad of [
+    "2020-09-21T14:30:05",
+    "Sep 21 2020",
+    "2020-09-21",
+    "2020-09-21 14:30:05Z",
+    "2021-02-30T13:23Z",
+    "2021-02-29T00:00:00Z",
+    "2020-13-01T00:00Z",
+    "2020-09-21T24:00Z",
+    "2020-09-21T14:60Z",
+    "2020-09-21T14:30:60Z",
+    "2020-09-21T14:30+25:00",
+    "",
+  ]) {
+    assert.throws(() => formatTimestamp(bad), RangeError, bad);
+  }
+  assert.equal(formatTimestamp("2020-02-29T23:59Z"), "2020-02-29T23:59:00.000Z");
+  assert.equal(formatTimestamp("2020-09-21T14:30-01:15"), "2020-09-21T15:45:00.000Z");
+  assert.equal(formatTimestamp("2020-09-21T14:30:05.1Z"), "2020-09-21T14:30:05.100Z");
+  assert.equal(formatTimestamp("2020-09-21T14:30:05.123456Z"), "2020-09-21T14:30:05.123Z");
+  assert.equal(formatTimestamp("0099-01-01T00:00Z"), "0099-01-01T00:00:00.000Z");
+});

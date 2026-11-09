@@ -7,6 +7,7 @@ import {
   percentEncode,
 } from "./encoding.js";
 import { canonicalIp, ipVersion, isDocumentationIp, isPublicIp, normalizeIp } from "./ip.js";
+import { parseIsoTimestamp } from "./iso-time.js";
 import {
   CONNECTION_METHODS,
   type ConnectionMethod,
@@ -189,7 +190,7 @@ const RULES: Readonly<Partial<Record<HeaderName, HeaderRule>>> = {
           out.push(error("Each factor must have a type of TOTP, AUTH_CODE or OTHER"));
         }
         const ts = factor.get("timestamp") ?? "";
-        if (!MFA_TIMESTAMP.test(ts) || Number.isNaN(Date.parse(ts))) {
+        if (!MFA_TIMESTAMP.test(ts) || parseIsoTimestamp(ts) === undefined) {
           out.push(
             error(
               "Each factor must have a UTC timestamp in the format yyyy-MM-ddThh:mmZ, seconds and milliseconds optional",

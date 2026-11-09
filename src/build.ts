@@ -6,6 +6,7 @@ import {
   percentEncode,
 } from "./encoding.js";
 import { normalizeIp } from "./ip.js";
+import { parseIsoTimestamp } from "./iso-time.js";
 import { type ConnectionMethod, type HeaderName, REQUIRED_HEADERS } from "./spec.js";
 import { formatTimestamp } from "./time.js";
 import {
@@ -41,7 +42,8 @@ export type MultiFactorType = "TOTP" | "AUTH_CODE" | "OTHER";
 
 /**
  * One multi-factor step. A string timestamp that is already UTC `yyyy-MM-ddThh:mmZ` (seconds and
- * milliseconds optional) is sent as given; a `Date` or any other string is normalized to `.sssZ`.
+ * milliseconds optional) is sent as given; a `Date` or any other ISO 8601 string with a zone is
+ * normalized to `.sssZ`. A string without a zone or with an impossible date throws a RangeError.
  */
 export interface MultiFactor {
   type: MultiFactorType;
@@ -122,7 +124,11 @@ export class InvalidFraudHeadersError extends Error {
 const MFA_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?Z$/;
 
 function multiFactorTimestamp(value: Date | string): string {
-  if (typeof value === "string" && MFA_TIMESTAMP.test(value) && !Number.isNaN(Date.parse(value))) {
+  if (
+    typeof value === "string" &&
+    MFA_TIMESTAMP.test(value) &&
+    parseIsoTimestamp(value) !== undefined
+  ) {
     return value;
   }
   return formatTimestamp(value);

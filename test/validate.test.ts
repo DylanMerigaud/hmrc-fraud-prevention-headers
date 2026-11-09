@@ -309,6 +309,14 @@ test("Multi-Factor checks type, timestamp and unique-reference", () => {
     run("OTHER_DIRECT", { "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2021-11-21T13%3A23Z" }),
     h,
   );
+  for (const ts of ["2021-02-30T13%3A23Z", "2021-11-21T25%3A23Z", "2021-11-21T13%3A23%3A61Z"]) {
+    only(
+      run("OTHER_DIRECT", {
+        "Gov-Client-Multi-Factor": `type=OTHER&timestamp=${ts}&unique-reference=a`,
+      }),
+      h,
+    );
+  }
   for (const ts of ["2021-11-21T13%3A23%3A05Z", "2021-11-21T13%3A23%3A05.123Z"]) {
     assert.equal(
       run("OTHER_DIRECT", {

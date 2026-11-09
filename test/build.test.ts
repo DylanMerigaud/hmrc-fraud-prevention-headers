@@ -298,3 +298,17 @@ test("an unknown connection method throws a TypeError naming the eight methods",
     (e: unknown) => e instanceof TypeError && /WEB_APP_VIA_SERVER/.test((e as Error).message),
   );
 });
+
+test("Multi-Factor rejects an impossible calendar date", () => {
+  for (const timestamp of ["2021-02-30T13:23Z", "2021-04-31T13:23:05Z", "2021-11-21T13:23"]) {
+    assert.throws(
+      () =>
+        buildFraudPreventionHeaders(
+          { ...webReal, multiFactor: [{ type: "TOTP", timestamp, uniqueReference: "abc" }] },
+          { validate: false },
+        ),
+      RangeError,
+      timestamp,
+    );
+  }
+});
