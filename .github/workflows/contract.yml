@@ -1,0 +1,27 @@
+name: Contract
+
+# Live checks against HMRC, outside the ordinary CI: the published spec pages still list the
+# headers this library sends per connection method, the change log's newest version is still the
+# one implemented, and (when sandbox credentials are configured as repository secrets) HMRC's own
+# Test Fraud Prevention Headers API agrees with the offline validator.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run test:contract
+        env:
+          HMRC_CLIENT_ID: ${{ secrets.HMRC_CLIENT_ID }}
+          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
