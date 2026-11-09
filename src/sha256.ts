@@ -44,32 +44,38 @@ export function sha256Hex(input: string | Uint8Array): string {
       const s1 = ((b >>> 17) | (b << 15)) ^ ((b >>> 19) | (b << 13)) ^ (b >>> 10);
       w[i] = ((w[i - 16] as number) + s0 + (w[i - 7] as number) + s1) >>> 0;
     }
-    let [a, b, c, d, e, f, g, hh] = h as unknown as number[];
+    let a = h[0] as number;
+    let b = h[1] as number;
+    let c = h[2] as number;
+    let d = h[3] as number;
+    let e = h[4] as number;
+    let f = h[5] as number;
+    let g = h[6] as number;
+    let hh = h[7] as number;
     for (let i = 0; i < 64; i++) {
-      const S1 = ((e! >>> 6) | (e! << 26)) ^ ((e! >>> 11) | (e! << 21)) ^ ((e! >>> 25) | (e! << 7));
-      const ch = (e! & f!) ^ (~e! & g!);
-      const t1 = (hh! + S1 + ch + (K[i] as number) + (w[i] as number)) >>> 0;
-      const S0 =
-        ((a! >>> 2) | (a! << 30)) ^ ((a! >>> 13) | (a! << 19)) ^ ((a! >>> 22) | (a! << 10));
-      const maj = (a! & b!) ^ (a! & c!) ^ (b! & c!);
+      const S1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7));
+      const ch = (e & f) ^ (~e & g);
+      const t1 = (hh + S1 + ch + (K[i] as number) + (w[i] as number)) >>> 0;
+      const S0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10));
+      const maj = (a & b) ^ (a & c) ^ (b & c);
       const t2 = (S0 + maj) >>> 0;
       hh = g;
       g = f;
       f = e;
-      e = (d! + t1) >>> 0;
+      e = (d + t1) >>> 0;
       d = c;
       c = b;
       b = a;
       a = (t1 + t2) >>> 0;
     }
-    h[0] = (h[0]! + a!) >>> 0;
-    h[1] = (h[1]! + b!) >>> 0;
-    h[2] = (h[2]! + c!) >>> 0;
-    h[3] = (h[3]! + d!) >>> 0;
-    h[4] = (h[4]! + e!) >>> 0;
-    h[5] = (h[5]! + f!) >>> 0;
-    h[6] = (h[6]! + g!) >>> 0;
-    h[7] = (h[7]! + hh!) >>> 0;
+    h[0] = ((h[0] as number) + a) >>> 0;
+    h[1] = ((h[1] as number) + b) >>> 0;
+    h[2] = ((h[2] as number) + c) >>> 0;
+    h[3] = ((h[3] as number) + d) >>> 0;
+    h[4] = ((h[4] as number) + e) >>> 0;
+    h[5] = ((h[5] as number) + f) >>> 0;
+    h[6] = ((h[6] as number) + g) >>> 0;
+    h[7] = ((h[7] as number) + hh) >>> 0;
   }
   return Array.from(h, (x) => x.toString(16).padStart(8, "0")).join("");
 }
