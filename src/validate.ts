@@ -93,7 +93,9 @@ const MAC = /^[0-9a-f]{2}([:-][0-9a-f]{2}){5}$/i;
 const TIMEZONE = /^UTC[+-](0\d|1[0-4]):(00|15|30|45)$/;
 const WHOLE = /^[1-9]\d*$/;
 const POSITIVE_NUMBER = /^\d+(\.\d+)?$/;
-const HASHED = /^[0-9a-fA-F]{16,}$|^[A-Za-z0-9+/_-]{20,}={0,2}$/;
+const HEX_ONLY = /^[0-9a-fA-F]{16,}$/;
+const BASE64 = /^[A-Za-z0-9+/_-]{22,}={0,2}$/;
+const DASH_GROUPED = /^([A-Za-z0-9]{3,8}-){2,}[A-Za-z0-9]{3,8}$/;
 const ENCODED_TOKEN = /^(?:[A-Za-z0-9\-._~]|%[0-9A-Fa-f]{2})*$/;
 const MFA_TYPES = new Set(["TOTP", "AUTH_CODE", "OTHER"]);
 
@@ -116,6 +118,17 @@ type Shape = "single" | "list" | "keyValue";
 interface HeaderRule {
   shape: Shape;
   check: (value: string, ctx: CheckContext) => Finding[];
+}
+
+/**
+ * True when a decoded license value looks hashed: 32 or more hex characters, 16 or more hex
+ * characters and nothing else, or base64/base64url of 22 or more characters that is not grouped
+ * by dashes like a product key (`ABCDE-FGHIJ-KLMNO-PQRST`).
+ */
+function looksHashed(value: string): boolean {
+  if ((value.match(/[0-9a-fA-F]/g) ?? []).length >= 32) return true;
+  if (HEX_ONLY.test(value)) return true;
+  return BASE64.test(value) && !DASH_GROUPED.test(value);
 }
 
 const error = (message: string): Finding => ({ level: "error", message });
@@ -306,7 +319,7 @@ const RULES: Readonly<Partial<Record<HeaderName, HeaderRule>>> = {
       if (pairs.some(([k, val]) => k === "" || val === "")) {
         return [error("Each license must have a software name and a hashed value")];
       }
-      return pairs.every(([, val]) => HASHED.test(val))
+      return pairs.every(([, val]) => looksHashed(val))
         ? []
         : [warning("License value does not look hashed")];
     },
