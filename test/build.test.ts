@@ -291,3 +291,10 @@ test("buildForwardedChain links each server to the one before it", () => {
 test("buildForwardedChain throws on an empty server list", () => {
   assert.throws(() => buildForwardedChain("198.51.100.0", []));
 });
+
+test("an unknown connection method throws a TypeError naming the eight methods", () => {
+  assert.throws(
+    () => buildFraudPreventionHeaders({ connectionMethod: "WEB_APP" as never }),
+    (e: unknown) => e instanceof TypeError && /WEB_APP_VIA_SERVER/.test((e as Error).message),
+  );
+});

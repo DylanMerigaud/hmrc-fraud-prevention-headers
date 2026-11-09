@@ -266,10 +266,16 @@ export function buildFraudPreventionHeaders(
   input: FraudPreventionInput,
   options: BuildOptions = {},
 ): Record<HeaderName, string> {
+  const required = REQUIRED_HEADERS[input.connectionMethod] as readonly HeaderName[] | undefined;
+  if (!required) {
+    throw new TypeError(
+      `Unknown connectionMethod ${JSON.stringify(input.connectionMethod)}: expected one of ${Object.keys(REQUIRED_HEADERS).join(", ")}`,
+    );
+  }
   const unavailable = input.unavailable ?? {};
   const out: Partial<Record<HeaderName, string>> = {};
   const missing: HeaderName[] = [];
-  for (const header of REQUIRED_HEADERS[input.connectionMethod]) {
+  for (const header of required) {
     const value = MAKERS[header](input);
     if (value !== undefined) {
       out[header] = value;
