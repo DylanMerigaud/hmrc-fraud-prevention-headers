@@ -106,8 +106,15 @@ export function collectBrowserFraudData(options: CollectOptions = {}): BrowserFr
       "collectBrowserFraudData must run in a browser or be given `window` in its options",
     );
   }
+  let storage: StorageLike | undefined;
+  try {
+    // sandboxed iframes throw a SecurityError on the property access itself
+    storage = w.localStorage;
+  } catch {
+    storage = undefined;
+  }
   return {
-    deviceId: getOrCreateDeviceId(w.localStorage, options.storageKey ?? DEFAULT_KEY, () =>
+    deviceId: getOrCreateDeviceId(storage, options.storageKey ?? DEFAULT_KEY, () =>
       createDeviceId(w.crypto ?? globalCrypto()),
     ),
     screens: [

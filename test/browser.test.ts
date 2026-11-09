@@ -163,3 +163,13 @@ test("output passes the builder", () => {
   });
   assert.equal(validateFraudPreventionHeaders(headers).code, "VALID_HEADERS");
 });
+
+test("a localStorage getter that throws (sandboxed iframe) still gives a fresh UUID", () => {
+  const w = fakeWindow();
+  Object.defineProperty(w, "localStorage", {
+    get() {
+      throw new Error("SecurityError");
+    },
+  });
+  assert.match(collectBrowserFraudData({ window: w }).deviceId, UUID);
+});
