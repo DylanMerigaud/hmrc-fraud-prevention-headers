@@ -578,3 +578,62 @@ test("Forwarded cross check matches IPv6 addresses written differently", () => {
   const result = validateFraudPreventionHeaders(headers as Record<string, string>);
   assert.ok(!(result.errors ?? []).some((e) => e.code === "INVALID_HEADERS"));
 });
+
+test("keys and values of key-value and list headers must be percent encoded", () => {
+  const message = "Keys and values must be percent encoded";
+  const cases: Array<[ConnectionMethod, string, string]> = [
+    [
+      "OTHER_DIRECT",
+      "Gov-Client-User-Agent",
+      "os-family=Windows&os-version=Server 2012&device-manufacturer=Dell&device-model=X1",
+    ],
+    [
+      "OTHER_DIRECT",
+      "Gov-Client-User-Agent",
+      "os-family=iOS&os-version=13.3.1&device-manufacturer=Apple&device-model=iPhone12,3",
+    ],
+    ["OTHER_DIRECT", "Gov-Client-Local-IPs", "fc00::,10.1.2.3"],
+    ["OTHER_DIRECT", "Gov-Client-MAC-Addresses", "ea:43:1a:5d:21:45"],
+    ["OTHER_DIRECT", "Gov-Client-User-IDs", "os=domain\\alice&my-application=alice123"],
+    [
+      "OTHER_DIRECT",
+      "Gov-Vendor-License-IDs",
+      "my licensed software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
+    ],
+    ["OTHER_DIRECT", "Gov-Vendor-Version", "my-application=1.6.0 beta"],
+    [
+      "OTHER_DIRECT",
+      "Gov-Client-Multi-Factor",
+      "type=TOTP&timestamp=2021-11-21T13:23Z&unique-reference=a",
+    ],
+    [
+      "OTHER_VIA_SERVER",
+      "Gov-Vendor-Forwarded",
+      "by=176.30.57.118&for=81.2.69.142,by=2001:db8::1&for=176.30.57.118",
+    ],
+    ["DESKTOP_APP_DIRECT", "Gov-Client-Window-Size", "width=1256&height=803&x=a b"],
+    [
+      "DESKTOP_APP_DIRECT",
+      "Gov-Client-Screens",
+      "width=1920&height=1080&scaling-factor=1&colour-depth=16&note=a/b",
+    ],
+  ];
+  for (const [method, header, value] of cases) {
+    const result = run(method, { [header]: value });
+    const errs = on(result.errors, header.toLowerCase());
+    assert.ok(
+      errs.some((e) => e.code === "INVALID_HEADER" && e.message === message),
+      `${header}: ${value}: ${JSON.stringify(result)}`,
+    );
+  }
+});
+
+test("single-value headers keep raw colons", () => {
+  const result = run("OTHER_VIA_SERVER", {
+    "Gov-Client-Public-IP": "2a00:1450:4009:81f::200e",
+    "Gov-Vendor-Public-IP": "2a00:1450:4009:820::200e",
+    "Gov-Vendor-Forwarded":
+      "by=2a00%3A1450%3A4009%3A820%3A%3A200e&for=2a00%3A1450%3A4009%3A81f%3A%3A200e",
+  });
+  assert.equal(result.code, "VALID_HEADERS", JSON.stringify(result));
+});

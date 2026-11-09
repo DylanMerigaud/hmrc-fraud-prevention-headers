@@ -71,6 +71,7 @@ const MSG = {
   ascii: "Value must be US-ASCII, with other characters percent encoded",
   placeholder: "Value must not be a placeholder",
   malformed: "Value contains a malformed percent escape",
+  encoded: "Keys and values must be percent encoded",
   connectionMethod: "Value must be a recognised connection method",
   example: "Value is an example from the specification",
   timezone: "Value must be a recognised timezone in UTC format, submitted as UTC±<hh>:<mm>",
@@ -93,6 +94,7 @@ const TIMEZONE = /^UTC[+-](0\d|1[0-4]):(00|15|30|45)$/;
 const WHOLE = /^[1-9]\d*$/;
 const POSITIVE_NUMBER = /^\d+(\.\d+)?$/;
 const HASHED = /^[0-9a-fA-F]{16,}$|^[A-Za-z0-9+/_-]{20,}={0,2}$/;
+const ENCODED_TOKEN = /^(?:[A-Za-z0-9\-._~]|%[0-9A-Fa-f]{2})*$/;
 const MFA_TYPES = new Set(["TOTP", "AUTH_CODE", "OTHER"]);
 
 /** What a per-header checker sees besides the value. */
@@ -325,6 +327,26 @@ const RULES: Readonly<Partial<Record<HeaderName, HeaderRule>>> = {
   },
 };
 
+/**
+ * True when every raw token is percent encoded: each list value, or each key and value of each
+ * structure. A key-value fragment without `=` (left over by a raw comma, as in
+ * `device-model=iPhone12,3`) fails too.
+ */
+function isPercentEncoded(value: string, shape: Shape): boolean {
+  if (shape === "list") return value.split(",").every((v) => ENCODED_TOKEN.test(v));
+  if (shape === "keyValue") {
+    return value.split(",").every((struct) =>
+      struct.split("&").every((pair) => {
+        const eq = pair.indexOf("=");
+        return (
+          eq >= 0 && ENCODED_TOKEN.test(pair.slice(0, eq)) && ENCODED_TOKEN.test(pair.slice(eq + 1))
+        );
+      }),
+    );
+  }
+  return true;
+}
+
 function isPlaceholder(value: string): boolean {
   return PLACEHOLDERS.has(value.trim().toLowerCase());
 }
@@ -500,6 +522,7 @@ export function validateFraudPreventionHeaders(headers: HeaderSource): Validatio
     } else {
       // a placeholder inside a list or a structure does not stop the header's own checks
       findings = hasInnerPlaceholder(value, rule.shape) ? [error(MSG.placeholder)] : [];
+      if (!isPercentEncoded(value, rule.shape)) findings.push(error(MSG.encoded));
       try {
         findings.push(...rule.check(value, ctx));
       } catch (e) {
