@@ -26,6 +26,8 @@ jobs:
       - run: npm test
       - name: Run every example against the built package
         run: node scripts/run-examples.mjs
+      - name: Run every README code block
+        run: node scripts/run-readme.mjs
 
   runtimes:
     runs-on: ubuntu-latest
