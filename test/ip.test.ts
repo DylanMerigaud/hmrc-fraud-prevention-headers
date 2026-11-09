@@ -1,6 +1,13 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { ipVersion, isDocumentationIp, isPublicIp, normalizeIp } from "../src/ip.js";
+import {
+  canonicalIp,
+  ipVersion,
+  isDocumentationIp,
+  isPublicIp,
+  normalizeIp,
+  sameIp,
+} from "../src/ip.js";
 
 test("ipVersion", () => {
   assert.equal(ipVersion("198.51.100.0"), 4);
@@ -50,4 +57,16 @@ test("isDocumentationIp", () => {
   assert.equal(isDocumentationIp("192.0.2.1"), true);
   assert.equal(isDocumentationIp("2001:db8::1"), true);
   assert.equal(isDocumentationIp("81.2.69.142"), false);
+});
+
+test("canonicalIp and sameIp compare addresses whatever their spelling", () => {
+  assert.equal(
+    canonicalIp("2001:0DB8:85a3:0000:0000:8a2e:0370:7334"),
+    "2001:db8:85a3::8a2e:370:7334",
+  );
+  assert.equal(canonicalIp("2001:db8:0:1:0:0:0:1"), "2001:db8:0:1::1");
+  assert.equal(canonicalIp("::ffff:81.2.69.142"), "81.2.69.142");
+  assert.equal(canonicalIp("2001:db8:1:1:1:1:1:1"), "2001:db8:1:1:1:1:1:1");
+  assert.ok(sameIp("2001:0db8::", "2001:db8::0"));
+  assert.ok(!sameIp("nope", "nope"));
 });

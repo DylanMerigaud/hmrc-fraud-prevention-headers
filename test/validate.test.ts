@@ -562,3 +562,11 @@ test("an error and a warning on the same header coexist; errors win the overall 
   assert.equal(on(result.errors, "gov-client-user-ids").length, 1);
   assert.equal(on(result.warnings, "gov-client-user-ids").length, 1);
 });
+
+test("Forwarded cross check matches IPv6 addresses written differently", () => {
+  const headers = { ...SPEC_EXAMPLES.WEB_APP_VIA_SERVER };
+  headers["Gov-Client-Public-IP"] = "2a00:1450:4009:081f:0000:0000:0000:200e";
+  headers["Gov-Vendor-Forwarded"] = "by=203.0.113.6&for=2a00%3A1450%3A4009%3A81f%3A%3A200e";
+  const result = validateFraudPreventionHeaders(headers as Record<string, string>);
+  assert.ok(!(result.errors ?? []).some((e) => e.code === "INVALID_HEADERS"));
+});

@@ -110,3 +110,37 @@ export function isDocumentationIp(value: string): boolean {
   const v6 = parseIpv6(ip);
   return !!v6 && v6[0] === 0x2001 && v6[1] === 0x0db8;
 }
+
+/**
+ * One spelling per address, for comparing two IPs: IPv4-mapped IPv6 becomes dotted IPv4, IPv6
+ * becomes its RFC 5952 text (lowercase, no leading zeros, the longest run of two or more zero
+ * groups written `::`). A value that is not an IP comes back trimmed and lowercased.
+ */
+export function canonicalIp(value: string): string {
+  const v = normalizeIp(value).trim();
+  const g = parseIpv6(v);
+  if (!g) return v.toLowerCase();
+  let bestStart = -1;
+  let bestLen = 0;
+  for (let i = 0; i < 8; ) {
+    if (g[i] !== 0) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j < 8 && g[j] === 0) j++;
+    if (j - i > bestLen && j - i >= 2) {
+      bestStart = i;
+      bestLen = j - i;
+    }
+    i = j;
+  }
+  const hex = g.map((x) => x.toString(16));
+  if (bestStart < 0) return hex.join(":");
+  return `${hex.slice(0, bestStart).join(":")}::${hex.slice(bestStart + bestLen).join(":")}`;
+}
+
+/** True when both values are IP addresses naming the same address, whatever their spelling. */
+export function sameIp(a: string, b: string): boolean {
+  return ipVersion(normalizeIp(a)) !== 0 && canonicalIp(a) === canonicalIp(b);
+}

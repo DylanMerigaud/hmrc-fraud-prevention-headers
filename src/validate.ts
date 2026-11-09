@@ -6,7 +6,7 @@ import {
   percentDecode,
   percentEncode,
 } from "./encoding.js";
-import { ipVersion, isDocumentationIp, isPublicIp, normalizeIp } from "./ip.js";
+import { canonicalIp, ipVersion, isDocumentationIp, isPublicIp, normalizeIp } from "./ip.js";
 import {
   CONNECTION_METHODS,
   type ConnectionMethod,
@@ -374,7 +374,7 @@ function collect(source: HeaderSource): Map<string, string> {
 function decodedIp(value: string | undefined): string | undefined {
   if (value === undefined || value === "") return undefined;
   try {
-    return normalizeIp(percentDecode(value)).toLowerCase();
+    return canonicalIp(percentDecode(value));
   } catch {
     return undefined;
   }
@@ -391,7 +391,7 @@ function crossForwarded(headers: ReadonlyMap<string, string>): ValidationIssue[]
   } catch {
     return [];
   }
-  const ip = (v: string | undefined): string => normalizeIp(v ?? "").toLowerCase();
+  const ip = (v: string | undefined): string => canonicalIp(v ?? "");
   if (hops.some((hop) => ip(hop.get("for")) === client && ip(hop.get("by")) === vendor)) return [];
   return [
     {
